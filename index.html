@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Google Maps API</title>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .travel-mode-btn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        .travel-mode-btn.selected {
+            background-color: #4285f4;
+        }
+
+        .travel-mode-btn:hover:not(.selected) {
+            background-color: #1a73e8;
+        }
+
+        .travel-mode-btn:active:not(.selected) {
+            background-color: #3367d6;
+        }
+
+        .travel-mode-btn:focus {
+            outline: none;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .form-row label {
+            margin-right: 10px;
+        }
+
+        .form-row input[type="text"] {
+            margin-right: 10px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 250px;
+        }
+
+        .form-row button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            color: #fff;
+            background-color: #4285f4;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .form-row button:hover {
+            background-color: #1a73e8;
+        }
+
+        .form-row button:active {
+            background-color: #3367d6;
+        }
+
+        .form-row button:focus {
+            outline: none;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVaim1W5M99cFxY5J5dRIEU9jxZujgw-E&libraries=places" charset="utf-8"></script>
+    <script src="js/mapService.js"></script>
+
+</head>
+
+<body onload="initMap()">
+    <div id="map"></div>
+
+    <div class="form-row">
+        <label for="">移動手段</label>
+        <button onclick = "changeTravelMode('DRIVING')" id = "driving-btn" class = "travel-mode-btn selected" type="button">車</button>
+        <button onclick = "changeTravelMode('WALKING')" id = "walking-btn" class = "travel-mode-btn" type="button">徒歩</button>
+    </div>
+
+    <div class="form-row">
+        <label for="startPosition-input">出発地:</label>
+        <input id="startPosition-input" type="text">
+    </div>
+
+    <div class="form-row">
+        <label for="destination-input">目的地:</label>
+        <input id="destination-input" type="text">
+        <button onclick="calculateAndDisplayRoute()">経路を検索</button>
+    </div>
+
+    <div class="form-row">
+        <button onclick="showCurrentPosition()">現在地に戻る</button>
+    </div>
+
+    <div class="form-row">
+        <label for="facility-input">経路沿いで検索する施設：</label>
+        <input id="facility-input" type="text">
+    </div>
+
+    <div class="form-row">
+        <label for="searchRange-input">検索範囲：</label>
+        <input id="searchRange-input" type="text">
+        <button onclick="searchFacility()">検索</button>
+    </div>
+
+    <div class="form-row">
+        <button onclick="deleteRoute()">ルートを削除</button>
+    </div>
+</body>
+
+</html>
