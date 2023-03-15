@@ -114,44 +114,28 @@ function calculateRoute(startPos, destination){
     );
 }
 
-function searchFacility() {
-    //”経路沿いで検索する施設”に入力された文字列を取得
-    var facility = document.getElementById('facility-input').value;
+// ルート上のすべての点を取得して、各点から半径200m以内にあるレストランを検索する関数
+function searchPlacesAlongRoute(route, map, type) {
+    var path = route.routes[0].overview_path;
+    var placesService = new google.maps.places.PlacesService(map);
 
-    //検索範囲を取得してintにパース
-    var searchRangeInput = document.getElementById('searchRange-input').value;
-    var searchRange = parseInt(searchRangeInput);
-
-    if(isNaN(searchRange)){
-        window.alert('検索範囲には数字を入力してください。');
-        return;
-    }
-
-    searchRange += 'm';
-    var request = {
-        location: map.getCenter(),
-        radius: searchRange,
-        query: facility
-    };
-
-    var service = new google.maps.places.PlacesService(map);
-    service.textSearch(request, function (results, status) {
-        if (status == google.maps.places.PlacesServiceStatus.OK) {
-            //検索結果があればピンを表示
-            for (var i = 0; i < results.length; i++) {
-                var places = results[i];
-
-                facilityMarker = new google.maps.Marker({
-                    map: map,
-                    position: places.geometry.location
-                });
-
+    path.forEach(function(point){
+        placesService.nearbySearch({
+            location: point,
+            radius: 200,
+            type:[type]
+        }, function(results, status){
+            if(status == google.maps.places.PlacesServiceStatus.OK){
+                for(var i = 0; i < results.length; i++){
+                    var place = results[i];
+                    var marker = new google.maps.Marker({
+                        position: place.geometry.location,
+                        map: map
+                    });
+                }
             }
-        }
-        else {
-            window.alert('施設の検索に失敗しました。');
-        }
-    })
+        });
+    });
 }
 
 //ルートを削除
