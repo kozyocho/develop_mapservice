@@ -12,6 +12,7 @@ function initMap() {
                 var lat = position.coords.latitude;
                 var lng = position.coords.longitude;
 
+                //地図の初期化
                 map = new google.maps.Map(document.getElementById('map'), {
                     center: { lat: lat, lng: lng },
                     zoom: 15
@@ -37,15 +38,15 @@ function initMap() {
     }
 }
 
-function changeTravelMode(mode){
+function changeTravelMode(mode) {
     travelMode = mode;
     var drivingBtn = document.getElementById('driving-btn');
     var walkingBtn = document.getElementById('walking-btn');
 
-    if(mode == 'DRIVING'){
+    if (mode == 'DRIVING') {
         drivingBtn.classList.add('selected');
         walkingBtn.classList.remove('selected');
-    }else{
+    } else {
         drivingBtn.classList.remove('selected');
         walkingBtn.classList.add('selected');
     }
@@ -69,7 +70,7 @@ function showCurrentPosition() {
     }
 }
 
-//ルートを探索
+//ルートを探索する前に始点と目的地を取得する関数
 function calculateAndDisplayRoute() {
     //目的地を取得
     var destination = document.getElementById('destination-input').value;
@@ -78,65 +79,171 @@ function calculateAndDisplayRoute() {
     var startPos;
 
     //入力された地点があればそれを取得
-    if(document.getElementById('startPosition-input').value != ""){
+    if (document.getElementById('startPosition-input').value != "") {
         startPos = document.getElementById('startPosition-input').value;
+
+        if(document.getElementById('facility-input').value != ""){
+            keyword = document.getElementById('facility-input').value;
+        }
     }
     //なければ現在地を取得
-    else{
-        navigator.geolocation.getCurrentPosition(function(position){
+    else {
+        navigator.geolocation.getCurrentPosition(function (position) {
             startPos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
 
+            if(document.getElementById('facility-input').value != ""){
+                keyword = document.getElementById('facility-input').value;
+            }
+    
             //getCurrentPositionは非同期なのでstartPosに代入される前に下のdirectionsService.routeが通ってしまう。
             //それ防ぐためにgetCurrentPositionのコールバックでdirectionsService.routeを行う
-            calculateRoute(startPos, destination);
+            calculateRoute(startPos, destination, keyword);
             return;
         })
     }
 
-    calculateRoute(startPos, destination);
+    //実際にルート探索する関数
+    calculateRoute(startPos, destination, keyword);
 }
 
-function calculateRoute(startPos, destination){
-    directionsService.route(
-        {
-            origin: startPos,
-            destination: destination,
-            travelMode: travelMode
-        },
-        function (response, status) {
-            if (status === 'OK') {
-                directionsRenderer.setDirections(response);
-            }
-            else {
-                window.alert('経路の検索に失敗しました。');
+//ルート探索
+//startPos: 出発点
+//destination: 目的地
+function calculateRoute(startPos, destination, keyword) {
+
+    //DirectionsServiceオブジェクトの作成
+    directionsService = new google.maps.DirectionsService();
+    //DirectionsRendererオブジェクトの作成
+    directionsRenderer = new google.maps.DirectionsRenderer();
+
+    //ルート検索のリクエストパラメータ設定
+    var request = {
+        origin: startPos,
+        destination: destination,
+        travelMode: travelMode
+    };
+
+    //ルート検索の実行
+    directionsService.route(request,
+        function (result, status) {
+            if (status == google.maps.DirectionsStatus.OK) {
+                //ルートを地図上に表示
+                directionsRenderer.setDirections(result);
+                directionsRenderer.setMap(map);
+
+                //ルート上の全ての点を取得
+                //var route = result.routes[0];
+                //var points = [];
+                //getAllPoints(route, points);
+                var points = result.routes[0].overview_path;
+
+                //各点から半径200m以内のコンビニを検索
+                for(var k = 0; k < points.length; k++){
+                    searchFacility(points[k], keyword);
+                }
+            } else {
+                window.alert('ルート検索に失敗しました。');
             }
         }
     );
 }
 
-// ルート上のすべての点を取得して、各点から半径200m以内にあるレストランを検索する関数
-function searchPlacesAlongRoute(route, map, type) {
-    var path = route.routes[0].overview_path;
-    var placesService = new google.maps.places.PlacesService(map);
+//ルート上の全ての点を取得
+function getAllPoints(route, points) {
+    for (var i = 0; i < route.legs.length; i++) {
+        var leg = route.legs[i];
 
-    path.forEach(function(point){
-        placesService.nearbySearch({
-            location: point,
+        for (var j = 0; j < leg.steps.length; j++) {
+            var step = leg.steps[j];
+            points.push(step.start_location);
+        }
+    }
+}
+
+//施設検索関数
+function searchFacility(location, keyword) {
+
+    //ユーザー入力に基づいて施設のタイプを取得
+    getPlaceType(keyword, function(types){
+
+        // PlacesServiceオブジェクトの作成
+        var placesService = new google.maps.places.PlacesService(map);
+        
+        //施設検索のリクエストパラメータ設定
+        var request = {
+            location: location,
             radius: 200,
-            type:[type]
-        }, function(results, status){
+            type: types
+        };
+        console.log("タイプ：" + types);
+
+        //施設検索の実行
+        placesService.nearbySearch(request, function(results, status){
             if(status == google.maps.places.PlacesServiceStatus.OK){
-                for(var i = 0; i < results.length; i++){
-                    var place = results[i];
-                    var marker = new google.maps.Marker({
-                        position: place.geometry.location,
-                        map: map
-                    });
+                //施設を地図上に表示
+                for (var i = 0; i < results.length; i++) {
+                    createMarker(results[i]);
                 }
             }
         });
     });
 }
+
+//マーカー作成関数
+function createMarker(place){
+    var marker = new google.maps.Marker({
+        position: place.geometry.location,
+        map: map
+    });
+}
+
+//ユーザーの入力に基づいて施設を検索し、typeを取得する関数
+function getPlaceType(keyword, callback){
+    //PlacesServiceオブジェクトの作成
+    var placesService = new google.maps.places.PlacesService(map);
+
+    //施設検索のリクエスト
+    var request = {
+        query: keyword
+    };
+
+    //施設検索の実行
+    placesService.textSearch(request,
+        function(results, status){
+            if(status == google.maps.places.PlacesServiceStatus.OK){
+                if(results.length > 0){
+                    var place = results[0];
+                    var types = place.types;
+                    callback(types);
+                }
+            }
+        });
+}
+
+// ルート上のすべての点を取得して、各点から半径200m以内にあるレストランを検索する関数
+// function searchPlacesAlongRoute(route, map, type) {
+//     //overview_path：結果のルートのおおよその（平滑化された）パスを示す LatLng の配列が格納される
+//     var path = route.routes[0].overview_path;
+//     var placesService = new google.maps.places.PlacesService(map);
+
+//     path.forEach(function (point) {
+//         placesService.nearbySearch({
+//             location: point,
+//             radius: 200,
+//             type: [type]
+//         }, function (results, status) {
+//             if (status == google.maps.places.PlacesServiceStatus.OK) {
+//                 for (var i = 0; i < results.length; i++) {
+//                     var place = results[i];
+//                     var marker = new google.maps.Marker({
+//                         position: place.geometry.location,
+//                         map: map
+//                     });
+//                 }
+//             }
+//         });
+//     });
+// }
 
 //ルートを削除
 function deleteRoute() {
@@ -146,7 +253,8 @@ function deleteRoute() {
     //入力欄をクリア
     document.getElementById('destination-input').value = null;
 
-    currentPositionMarker.setMap(null);
+    //currentPositionMarker.setMap(null);
 
     facilityMarker.setMap(null);
 }
+
