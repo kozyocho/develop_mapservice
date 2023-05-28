@@ -102,7 +102,7 @@ function calculateAndDisplayRoute() {
             if(document.getElementById('searchRange-input').value != ""){
                 range = document.getElementById('searchRange-input').value;
             }
-            
+
             //getCurrentPositionは非同期なのでstartPosに代入される前に下のdirectionsService.routeが通ってしまう。
             //それ防ぐためにgetCurrentPositionのコールバックでdirectionsService.routeを行う
             calculateRoute(startPos, destination, keyword, range);
@@ -197,11 +197,19 @@ function searchFacility(location, keyword, range) {
     });
 }
 
-//マーカー作成関数
+//地図にピンを立てる
 function createMarker(place){
     var marker = new google.maps.Marker({
         position: place.geometry.location,
-        map: map
+        map: map,
+        title: place.name //ピンに施設名を設定
+    });
+
+    marker.addListener("click", function(){
+        var infoWindow = new google.maps.InfoWindow({
+            content: place.name //施設名を表示
+        });
+        infoWindow.open(map, marker);
     });
 }
 
