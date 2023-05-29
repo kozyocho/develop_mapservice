@@ -1,16 +1,19 @@
-var map;
-var directionsService;
-var directionsRenderer;
-var currentPositionMarker;
-var travelMode = 'DRIVING';
-var facilityMarker;
+let map;
+let directionsService;
+let directionsRenderer;
+let currentPositionMarker;
+let travelMode = 'DRIVING';
+let markers = [];
+let currentPos;
 
+//地図の初期化
 function initMap() {
     if (navigator.geolocation) {
+        //現在地を取得
         navigator.geolocation.getCurrentPosition(
             function (position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
 
                 //地図の初期化
                 map = new google.maps.Map(document.getElementById('map'), {
@@ -18,6 +21,7 @@ function initMap() {
                     zoom: 15
                 });
 
+                //現在地にピンを立てる
                 currentPositionMarker = new google.maps.Marker(
                     {
                         position: { lat: lat, lng: lng },
@@ -26,88 +30,79 @@ function initMap() {
                     }
                 );
 
+                //後で使いまわせるように現在地を保持しておく
+                currentPos = new google.maps.LatLng(lat, lng);
+
                 directionsService = new google.maps.DirectionsService();
                 directionsRenderer = new google.maps.DirectionsRenderer();
                 directionsRenderer.setMap(map);
-
             }
         );
-    }
-    else {
-        window.alert('お使いのブラウザは現在地を取得できません。');
+    } else {
+        window.alert('現在地を取得できません。');
     }
 }
 
+//移動手段の変更
 function changeTravelMode(mode) {
     travelMode = mode;
-    var drivingBtn = document.getElementById('driving-btn');
-    var walkingBtn = document.getElementById('walking-btn');
+    let drivingBtn = document.getElementById('driving-btn');
+    let walkingBtn = document.getElementById('walking-btn');
 
     if (mode == 'DRIVING') {
         drivingBtn.classList.add('selected');
         walkingBtn.classList.remove('selected');
-    } else {
+    } else if(mode == 'WALKING'){
         drivingBtn.classList.remove('selected');
         walkingBtn.classList.add('selected');
     }
 }
 
+//現在地を表示
 function showCurrentPosition() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             function (position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
+                let lat = position.coords.latitude;
+                let lng = position.coords.longitude;
 
                 map.setCenter({ lat: lat, lng: lng });
 
-                currentPositionMarker.setPosition({ lat: lat, lng: lng });
+                currentPositionMarker.setPosition({ 
+                    lat: lat,
+                    lng: lng
+                });
             }
         );
-    }
-    else {
-        window.alert('お使いのブラウザは現在地を取得できません。');
+    } else {
+        window.alert('現在地を取得できません。');
     }
 }
 
 //ルートを探索する前に始点と目的地を取得する関数
 function calculateAndDisplayRoute() {
     //目的地を取得
-    var destination = document.getElementById('destination-input').value;
-
+    let destination = document.getElementById('destination-input').value;
     //探索を開始する位置
-    var startPos;
+    let startPos;
+
+    if(document.getElementById('facility-input').value != ""){
+        keyword = document.getElementById('facility-input').value;
+    } else{
+        window.alert('施設を入力してください。')
+    }
+    
+    if(document.getElementById('searchRange-input').value != ""){
+        range = document.getElementById('searchRange-input').value;
+    } else{
+        window.alert('検索範囲を入力してください。')
+    }
 
     //入力された地点があればそれを取得
     if (document.getElementById('startPosition-input').value != "") {
         startPos = document.getElementById('startPosition-input').value;
-
-        if(document.getElementById('facility-input').value != ""){
-            keyword = document.getElementById('facility-input').value;
-        }
-
-        if(document.getElementById('searchRange-input').value != ""){
-            range = document.getElementById('searchRange-input').value;
-        }
-    }
-    //なければ現在地を取得
-    else {
-        navigator.geolocation.getCurrentPosition(function (position) {
-            startPos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-
-            if(document.getElementById('facility-input').value != ""){
-                keyword = document.getElementById('facility-input').value;
-            }
-
-            if(document.getElementById('searchRange-input').value != ""){
-                range = document.getElementById('searchRange-input').value;
-            }
-
-            //getCurrentPositionは非同期なのでstartPosに代入される前に下のdirectionsService.routeが通ってしまう。
-            //それ防ぐためにgetCurrentPositionのコールバックでdirectionsService.routeを行う
-            calculateRoute(startPos, destination, keyword, range);
-            return;
-        })
+    } else {
+        startPos = currentPos; //なければstartPosに現在地を代入
     }
 
     //実際にルート探索する関数
@@ -117,6 +112,8 @@ function calculateAndDisplayRoute() {
 //ルート探索
 //startPos: 出発点
 //destination: 目的地
+//keyword: 検索施設
+//range: 検索範囲
 function calculateRoute(startPos, destination, keyword, range) {
 
     //DirectionsServiceオブジェクトの作成
@@ -125,7 +122,7 @@ function calculateRoute(startPos, destination, keyword, range) {
     directionsRenderer = new google.maps.DirectionsRenderer();
 
     //ルート検索のリクエストパラメータ設定
-    var request = {
+    let request = {
         origin: startPos,
         destination: destination,
         travelMode: travelMode
@@ -158,11 +155,11 @@ function calculateRoute(startPos, destination, keyword, range) {
 
 //ルート上の全ての点を取得
 function getAllPoints(route, points) {
-    for (var i = 0; i < route.legs.length; i++) {
-        var leg = route.legs[i];
+    for (let i = 0; i < route.legs.length; i++) {
+        let leg = route.legs[i];
 
-        for (var j = 0; j < leg.steps.length; j++) {
-            var step = leg.steps[j];
+        for (let j = 0; j < leg.steps.length; j++) {
+            let step = leg.steps[j];
             points.push(step.start_location);
         }
     }
@@ -175,10 +172,10 @@ function searchFacility(location, keyword, range) {
     getPlaceType(keyword, function(types){
 
         // PlacesServiceオブジェクトの作成
-        var placesService = new google.maps.places.PlacesService(map);
+        let placesService = new google.maps.places.PlacesService(map);
         
         //施設検索のリクエストパラメータ設定
-        var request = {
+        let request = {
             location: location,
             radius: range,
             type: types
@@ -189,8 +186,9 @@ function searchFacility(location, keyword, range) {
         placesService.nearbySearch(request, function(results, status){
             if(status == google.maps.places.PlacesServiceStatus.OK){
                 //施設を地図上に表示
-                for (var i = 0; i < results.length; i++) {
+                for (let i = 0; i < results.length; i++) {
                     createMarker(results[i]);
+                    //console.log(results[i]);
                 }
             }
         });
@@ -199,27 +197,29 @@ function searchFacility(location, keyword, range) {
 
 //地図にピンを立てる
 function createMarker(place){
-    var marker = new google.maps.Marker({
+    let marker = new google.maps.Marker({
         position: place.geometry.location,
         map: map,
         title: place.name //ピンに施設名を設定
     });
 
     marker.addListener("click", function(){
-        var infoWindow = new google.maps.InfoWindow({
+        let infoWindow = new google.maps.InfoWindow({
             content: place.name //施設名を表示
         });
         infoWindow.open(map, marker);
     });
+
+    markers.push(marker);
 }
 
 //ユーザーの入力に基づいて施設を検索し、typeを取得する関数
 function getPlaceType(keyword, callback){
     //PlacesServiceオブジェクトの作成
-    var placesService = new google.maps.places.PlacesService(map);
+    let placesService = new google.maps.places.PlacesService(map);
 
     //施設検索のリクエスト
-    var request = {
+    let request = {
         query: keyword
     };
 
@@ -228,13 +228,14 @@ function getPlaceType(keyword, callback){
         function(results, status){
             if(status == google.maps.places.PlacesServiceStatus.OK){
                 if(results.length > 0){
-                    var place = results[0];
-                    var types = place.types;
-                    var primaryType = types[0]; //先頭のタイプのみ取得
+                    let place = results[0];
+                    let types = place.types;
+                    let primaryType = types[0]; //先頭のタイプのみ取得
                     callback(primaryType);
                 }
             }
-        });
+        }
+    );
 }
 
 //ルートを削除
@@ -243,10 +244,16 @@ function deleteRoute() {
     directionsRenderer.setMap(null);
 
     //入力欄をクリア
-    document.getElementById('destination-input').value = null;
+    document.getElementById('startPosition-input').value = '';
+    document.getElementById('destination-input').value = '';
+    document.getElementById('facility-input').value = '';
+    document.getElementById('searchRange-input').value = '';
 
-    //currentPositionMarker.setMap(null);
 
-    facilityMarker.setMap(null);
+    //全てのピンを削除
+    for(let i = 0; i < markers.length; i++){
+        markers[i].setMap(null);
+        delete markers[i];
+    }
 }
 
