@@ -205,7 +205,8 @@ function createMarker(place){
 
     marker.addListener("click", function(){
         let infoWindow = new google.maps.InfoWindow({
-            content: place.name //施設名を表示
+            //content: place.name //施設名を表示
+            content: getMarkerInfoContents(place) //情報ウィンドウに表示する内容を取得
         });
         infoWindow.open(map, marker);
     });
@@ -236,6 +237,26 @@ function getPlaceType(keyword, callback){
             }
         }
     );
+}
+
+//ピンの情報ウィンドウの内容を取得する関数
+function getMarkerInfoContents(place){
+    let content = "<div>";
+
+    //写真を表示
+    if(place.photos && place.photos.length > 0){
+        let photoUrl = place.photos[0].getUrl();
+        content += "<img src='" + photoUrl + "' />";
+    }
+
+    //評価を表示
+    if(place.rating){
+        content += "<p>評価: " + place.rating + "</p>";
+    }
+
+    content += "</div>";
+
+    return content;
 }
 
 //ルートを削除
