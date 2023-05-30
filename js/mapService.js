@@ -182,12 +182,28 @@ function searchFacility(location, keyword, range) {
         };
         console.log("タイプ：" + types);
 
+        //営業時間外の施設も含むチェックボックスの状態を取得
+        let includeClosed = document.getElementById('include-closed-checkbox').checked;
+
         //施設検索の実行
         placesService.nearbySearch(request, function(results, status){
             if(status == google.maps.places.PlacesServiceStatus.OK){
                 //施設を地図上に表示
                 for (let i = 0; i < results.length; i++) {
-                    createMarker(results[i]);
+                    //営業情報を取得
+                    placesService.getDetails({
+                        placeId: results[i].place_id
+                    },
+                    function(place, status){
+                        if (status == google.maps.places.PlacesServiceStatus.OK){
+                            // 営業中の施設のみ表示する場合は、営業情報を確認
+                            if(!includeClosed && place.opening_hours && !place.opening_hours.open_now){
+                                return; //営業時間外の施設は表示しない
+                            }
+                            createMarker(place);
+                        }
+                    });
+                    //createMarker(results[i]);
                     //console.log(results[i]);
                 }
             }
@@ -243,11 +259,16 @@ function getPlaceType(keyword, callback){
 function getMarkerInfoContents(place){
     let content = "<div>";
 
-    //写真を表示
-    if(place.photos && place.photos.length > 0){
-        let photoUrl = place.photos[0].getUrl();
-        content += "<img src='" + photoUrl + "' />";
+    //名前を表示
+    if(place.name){
+        content += "<p>" + place.name + "</p>"
     }
+
+    //写真を表示
+    //if(place.photos && place.photos.length > 0){
+         // let photoUrl = place.photos[0].getUrl();
+        //content += "<img src='" + photoUrl + "' />";
+    //}
 
     //評価を表示
     if(place.rating){
