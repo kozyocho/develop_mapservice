@@ -6,7 +6,9 @@ let travelMode = 'DRIVING';
 let markers = [];
 let currentPos;
 
-//地図の初期化
+/**
+ * 地図の初期化
+ */
 function initMap() {
     if (navigator.geolocation) {
         //現在地を取得
@@ -43,7 +45,10 @@ function initMap() {
     }
 }
 
-//移動手段の変更
+/**
+ * 移動手段の変更
+ * @param {string} mode 移動手段
+ */
 function changeTravelMode(mode) {
     travelMode = mode;
     let drivingBtn = document.getElementById('driving-btn');
@@ -58,7 +63,9 @@ function changeTravelMode(mode) {
     }
 }
 
-//現在地を表示
+/**
+ * 現在地を表示
+ */
 function showCurrentPosition() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -79,7 +86,9 @@ function showCurrentPosition() {
     }
 }
 
-//ルートを探索する前に始点と目的地を取得する関数
+/**
+ * ルートを探索する前に始点と目的地を取得する関数
+ */
 function calculateAndDisplayRoute() {
     //目的地を取得
     let destination = document.getElementById('destination-input').value;
@@ -109,11 +118,13 @@ function calculateAndDisplayRoute() {
     calculateRoute(startPos, destination, keyword, range);
 }
 
-//ルート探索
-//startPos: 出発点
-//destination: 目的地
-//keyword: 検索施設
-//range: 検索範囲
+/**
+ * ルート探索
+ * @param {string} startPos 出発点
+ * @param {string} destination 目的地
+ * @param {string} keyword 検索施設
+ * @param {int} range 検索範囲
+ */
 function calculateRoute(startPos, destination, keyword, range) {
 
     //DirectionsServiceオブジェクトの作成
@@ -165,7 +176,12 @@ function getAllPoints(route, points) {
     }
 }
 
-//施設検索関数
+/**
+ * 施設検索関数
+ * @param {*} location ルート上の点
+ * @param {*} keyword 検索施設
+ * @param {*} range 検索範囲
+ */
 function searchFacility(location, keyword, range) {
 
     //ユーザー入力に基づいて施設のタイプを取得
@@ -197,7 +213,7 @@ function searchFacility(location, keyword, range) {
                     function(place, status){
                         if (status == google.maps.places.PlacesServiceStatus.OK){
                             // 営業中の施設のみ表示する場合は、営業情報を確認
-                            if(!includeClosed && place.opening_hours && !place.opening_hours.open_now){
+                            if(!includeClosed && place.opening_hours && !place.opening_hours.isOpen()){
                                 return; //営業時間外の施設は表示しない
                             }
                             createMarker(place);
@@ -211,7 +227,10 @@ function searchFacility(location, keyword, range) {
     });
 }
 
-//地図にピンを立てる
+/**
+ * 地図にピンを立てる
+ * @param {*} place 施設
+ */
 function createMarker(place){
     let marker = new google.maps.Marker({
         position: place.geometry.location,
@@ -230,7 +249,11 @@ function createMarker(place){
     markers.push(marker);
 }
 
-//ユーザーの入力に基づいて施設を検索し、typeを取得する関数
+/**
+ * ユーザーの入力に基づいて施設を検索し、typeを取得する関数
+ * @param {string} keyword 
+ * @param {*} callback コールバック関数
+ */
 function getPlaceType(keyword, callback){
     //PlacesServiceオブジェクトの作成
     let placesService = new google.maps.places.PlacesService(map);
@@ -255,7 +278,11 @@ function getPlaceType(keyword, callback){
     );
 }
 
-//ピンの情報ウィンドウの内容を取得する関数
+/**
+ * ピンの情報ウィンドウの内容を取得する関数
+ * @param {*} place ピンの場所
+ * @returns 
+ */
 function getMarkerInfoContents(place){
     let content = "<div>";
 
@@ -280,7 +307,9 @@ function getMarkerInfoContents(place){
     return content;
 }
 
-//ルートを削除
+/**
+ * ルートを削除
+ */
 function deleteRoute() {
     //ルートマーカーを削除
     directionsRenderer.setMap(null);
