@@ -57,7 +57,7 @@ function changeTravelMode(mode) {
     if (mode == 'DRIVING') {
         drivingBtn.classList.add('selected');
         walkingBtn.classList.remove('selected');
-    } else if(mode == 'WALKING'){
+    } else if (mode == 'WALKING') {
         drivingBtn.classList.remove('selected');
         walkingBtn.classList.add('selected');
     }
@@ -75,7 +75,7 @@ function showCurrentPosition() {
 
                 map.setCenter({ lat: lat, lng: lng });
 
-                currentPositionMarker.setPosition({ 
+                currentPositionMarker.setPosition({
                     lat: lat,
                     lng: lng
                 });
@@ -95,15 +95,15 @@ function calculateAndDisplayRoute() {
     //探索を開始する位置
     let startPos;
 
-    if(document.getElementById('facility-input').value != ""){
+    if (document.getElementById('facility-input').value != "") {
         keyword = document.getElementById('facility-input').value;
-    } else{
+    } else {
         window.alert('施設を入力してください。')
     }
-    
-    if(document.getElementById('searchRange-input').value != ""){
+
+    if (document.getElementById('searchRange-input').value != "") {
         range = document.getElementById('searchRange-input').value;
-    } else{
+    } else {
         window.alert('検索範囲を入力してください。')
     }
 
@@ -154,7 +154,7 @@ function calculateRoute(startPos, destination, keyword, range) {
                 var points = result.routes[0].overview_path;
 
                 //各点から半径200m以内のコンビニを検索
-                for(var k = 0; k < points.length; k++){
+                for (var k = 0; k < points.length; k++) {
                     searchFacility(points[k], keyword, range);
                 }
             } else {
@@ -185,11 +185,11 @@ function getAllPoints(route, points) {
 function searchFacility(location, keyword, range) {
 
     //ユーザー入力に基づいて施設のタイプを取得
-    getPlaceType(keyword, function(types){
+    getPlaceType(keyword, function (types) {
 
         // PlacesServiceオブジェクトの作成
         let placesService = new google.maps.places.PlacesService(map);
-        
+
         //施設検索のリクエストパラメータ設定
         let request = {
             location: location,
@@ -202,23 +202,23 @@ function searchFacility(location, keyword, range) {
         let includeClosed = document.getElementById('include-closed-checkbox').checked;
 
         //施設検索の実行
-        placesService.nearbySearch(request, function(results, status){
-            if(status == google.maps.places.PlacesServiceStatus.OK){
+        placesService.nearbySearch(request, function (results, status) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
                 //施設を地図上に表示
                 for (let i = 0; i < results.length; i++) {
                     //営業情報を取得
                     placesService.getDetails({
                         placeId: results[i].place_id
                     },
-                    function(place, status){
-                        if (status == google.maps.places.PlacesServiceStatus.OK){
-                            // 営業中の施設のみ表示する場合は、営業情報を確認
-                            if(!includeClosed && place.opening_hours && !place.opening_hours.isOpen()){
-                                return; //営業時間外の施設は表示しない
+                        function (place, status) {
+                            if (status == google.maps.places.PlacesServiceStatus.OK) {
+                                // 営業中の施設のみ表示する場合は、営業情報を確認
+                                if (!includeClosed && place.opening_hours && !place.opening_hours.isOpen()) {
+                                    return; //営業時間外の施設は表示しない
+                                }
+                                createMarker(place);
                             }
-                            createMarker(place);
-                        }
-                    });
+                        });
                     //createMarker(results[i]);
                     //console.log(results[i]);
                 }
@@ -231,14 +231,14 @@ function searchFacility(location, keyword, range) {
  * 地図にピンを立てる
  * @param {*} place 施設
  */
-function createMarker(place){
+function createMarker(place) {
     let marker = new google.maps.Marker({
         position: place.geometry.location,
         map: map,
         title: place.name //ピンに施設名を設定
     });
 
-    marker.addListener("click", function(){
+    marker.addListener("click", function () {
         let infoWindow = new google.maps.InfoWindow({
             //content: place.name //施設名を表示
             content: getMarkerInfoContents(place) //情報ウィンドウに表示する内容を取得
@@ -254,9 +254,13 @@ function createMarker(place){
  * @param {string} keyword 
  * @param {*} callback コールバック関数
  */
-function getPlaceType(keyword, callback){
+function getPlaceType(keyword, callback) {
     //PlacesServiceオブジェクトの作成
     let placesService = new google.maps.places.PlacesService(map);
+
+    if (keyword == "コンビニ") {
+        keyword = "コンビニエンスストア"
+    }
 
     //施設検索のリクエスト
     let request = {
@@ -265,12 +269,13 @@ function getPlaceType(keyword, callback){
 
     //施設検索の実行
     placesService.textSearch(request,
-        function(results, status){
-            if(status == google.maps.places.PlacesServiceStatus.OK){
-                if(results.length > 0){
+        function (results, status) {
+            if (status == google.maps.places.PlacesServiceStatus.OK) {
+                if (results.length > 0) {
                     let place = results[0];
                     let types = place.types;
                     let primaryType = types[0]; //先頭のタイプのみ取得
+                    console.log("先頭タイプ" + primaryType);
                     callback(primaryType);
                 }
             }
@@ -283,22 +288,22 @@ function getPlaceType(keyword, callback){
  * @param {*} place ピンの場所
  * @returns 
  */
-function getMarkerInfoContents(place){
+function getMarkerInfoContents(place) {
     let content = "<div>";
 
     //名前を表示
-    if(place.name){
+    if (place.name) {
         content += "<p>" + place.name + "</p>"
     }
 
     //写真を表示
     //if(place.photos && place.photos.length > 0){
-         // let photoUrl = place.photos[0].getUrl();
-        //content += "<img src='" + photoUrl + "' />";
+    // let photoUrl = place.photos[0].getUrl();
+    //content += "<img src='" + photoUrl + "' />";
     //}
 
     //評価を表示
-    if(place.rating){
+    if (place.rating) {
         content += "<p>評価: " + place.rating + "</p>";
     }
 
@@ -322,7 +327,7 @@ function deleteRoute() {
 
 
     //全てのピンを削除
-    for(let i = 0; i < markers.length; i++){
+    for (let i = 0; i < markers.length; i++) {
         markers[i].setMap(null);
         delete markers[i];
     }
